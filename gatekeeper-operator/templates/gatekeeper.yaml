@@ -1,0 +1,402 @@
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    admission.gatekeeper.sh/ignore: no-self-managing
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    control-plane: controller-manager
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-system
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-admin
+  namespace: gatekeeper-system
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-webhook-server-cert
+  namespace: gatekeeper-system
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-manager-role
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - config.gatekeeper.sh
+  resources:
+  - configs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - config.gatekeeper.sh
+  resources:
+  - configs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - constraints.gatekeeper.sh
+  resources:
+  - '*'
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - templates.gatekeeper.sh
+  resources:
+  - constrainttemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - templates.gatekeeper.sh
+  resources:
+  - constrainttemplates/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - admissionregistration.k8s.io
+  resourceNames:
+  - gatekeeper-validating-webhook-configuration
+  resources:
+  - validatingwebhookconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gatekeeper-manager-role
+subjects:
+- kind: ServiceAccount
+  name: gatekeeper-admin
+  namespace: gatekeeper-system
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-manager-role
+  namespace: gatekeeper-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-manager-rolebinding
+  namespace: gatekeeper-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gatekeeper-manager-role
+subjects:
+- kind: ServiceAccount
+  name: gatekeeper-admin
+  namespace: gatekeeper-system
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-webhook-service
+  namespace: gatekeeper-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 8443
+  selector:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    control-plane: controller-manager
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    control-plane: controller-manager
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-controller-manager
+  namespace: gatekeeper-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: 'gatekeeper-operator'
+      chart: 'gatekeeper-operator'
+      control-plane: controller-manager
+      gatekeeper.sh/system: "yes"
+      heritage: 'Helm'
+      release: 'gatekeeper'
+  template:
+    metadata:
+      annotations:
+        container.seccomp.security.alpha.kubernetes.io/manager: runtime/default
+      labels:
+        app: 'gatekeeper-operator'
+        chart: 'gatekeeper-operator'
+        control-plane: controller-manager
+        gatekeeper.sh/system: "yes"
+        heritage: 'Helm'
+        release: 'gatekeeper'
+    spec:
+      containers:
+      - args:
+        - --audit-interval=60
+        - --port=8443
+        - --logtostderr
+        - --log-level=INFO
+        - --constraint-violations-limit=20
+        - --audit-from-cache=false
+        - --exempt-namespace=gatekeeper-system
+        command:
+        - /manager
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        image: 'quay.io/open-policy-agent/gatekeeper:v3.1.0-beta.8'
+        imagePullPolicy: 'IfNotPresent'
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9090
+        name: manager
+        ports:
+        - containerPort: 8443
+          name: webhook-server
+          protocol: TCP
+        - containerPort: 8888
+          name: metrics
+          protocol: TCP
+        - containerPort: 9090
+          name: healthz
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 9090
+        resources: 
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - all
+          runAsGroup: 999
+          runAsNonRoot: true
+          runAsUser: 1000
+        volumeMounts:
+        - mountPath: /certs
+          name: cert
+          readOnly: true
+      nodeSelector: 
+        {}
+      affinity:
+        null
+      tolerations:
+        []
+      serviceAccountName: gatekeeper-admin
+      terminationGracePeriodSeconds: 60
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: gatekeeper-webhook-server-cert
+---
+# Source: gatekeeper-operator/templates/gatekeeper.yaml
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  labels:
+    app: 'gatekeeper-operator'
+    chart: 'gatekeeper-operator'
+    gatekeeper.sh/system: "yes"
+    heritage: 'Helm'
+    release: 'gatekeeper'
+  name: gatekeeper-validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: gatekeeper-webhook-service
+      namespace: gatekeeper-system
+      path: /v1/admit
+  failurePolicy: Ignore
+  name: validation.gatekeeper.sh
+  namespaceSelector:
+    matchExpressions:
+    - key: control-plane
+      operator: DoesNotExist
+    - key: admission.gatekeeper.sh/ignore
+      operator: DoesNotExist
+  rules:
+  - apiGroups:
+    - '*'
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - '*'
+  sideEffects: None
+  timeoutSeconds: 5
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: gatekeeper-webhook-service
+      namespace: gatekeeper-system
+      path: /v1/admitlabel
+  failurePolicy: Fail
+  name: check-ignore-label.gatekeeper.sh
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - namespaces
+  sideEffects: None
+  timeoutSeconds: 5
