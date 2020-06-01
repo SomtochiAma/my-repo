@@ -1,0 +1,39 @@
+apiVersion: templates.gatekeeper.sh/v1beta1
+kind: ConstraintTemplate
+metadata:
+  name: k8sallowedrepo
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sAllowedRepo
+        listKind: K8sAllowedReposList
+        plural: k8sallowedrepos
+        singular: k8sallowedRepo
+      validation:
+        # Schema for the `parameters` field
+        openAPIV3Schema:
+          properties:
+            repos:
+              type: array
+              items: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sallowedrepo
+        containers[c] {
+          c = input.review.object.spec.containers[_]
+        }
+
+        containers[c] {
+          c = input.review.object.spec.template.spec.containers[_]
+        }
+
+        violation[{"msg": msg}] {
+            container := containers[_]
+            image := { s | s := split(container.image, "/")[0]}
+            allowed := { s | s := input.parameters.repos[_]}
+            missing := image - allowed
+            count(missing) > 0
+            msg := sprintf("Image %v not from trusted repos: %v", [container.image, allowed])
+        }
